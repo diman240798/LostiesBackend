@@ -15,7 +15,7 @@ import java.time.LocalDate
 
 
 @RestController
-@RequestMapping("/lost")
+@RequestMapping("/taken")
 class TakenAnimalController : BaseCrudController<TakenAnimal, TakenAnimalRepo>() {
 
     val ITEMS_ON_PAGE = 12
