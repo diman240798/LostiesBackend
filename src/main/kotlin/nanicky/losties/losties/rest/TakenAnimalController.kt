@@ -1,8 +1,8 @@
 package nanicky.losties.losties.rest
 
-import nanicky.losties.losties.entity.LostAnimal
+import nanicky.losties.losties.entity.TakenAnimal
 import nanicky.losties.losties.model.Animal
-import nanicky.losties.losties.repo.LostAnimalRepo
+import nanicky.losties.losties.repo.TakenAnimalRepo
 import nanicky.losties.losties.util.AnimalType
 import org.springframework.data.domain.Example
 import org.springframework.data.domain.PageRequest
@@ -16,7 +16,7 @@ import java.time.LocalDate
 
 @RestController
 @RequestMapping("/lost")
-class LostAnimalController : BaseCrudController<LostAnimal, LostAnimalRepo>() {
+class TakenAnimalController : BaseCrudController<TakenAnimal, TakenAnimalRepo>() {
 
     val ITEMS_ON_PAGE = 12
 
@@ -27,7 +27,7 @@ class LostAnimalController : BaseCrudController<LostAnimal, LostAnimalRepo>() {
             @RequestParam("breed") breed: String?,
             @RequestParam("type") type: AnimalType?,
             @RequestParam("page") page: Int?
-    ) : List<LostAnimal> {
+    ) : List<TakenAnimal> {
 
         val page = page ?: 0
 
@@ -43,12 +43,12 @@ class LostAnimalController : BaseCrudController<LostAnimal, LostAnimalRepo>() {
         }
 
 
-        val example = if (animal != null) Example.of(LostAnimal(animal = animal)) else null
+        val example = if (animal != null) Example.of(TakenAnimal(animal = animal)) else null
 
 
         val pageable = PageRequest.of(page, ITEMS_ON_PAGE, Sort.Direction.DESC, "date")
 
-        val result : List<LostAnimal>
+        val result : List<TakenAnimal>
         if (dateStartStr != null && dateEndStr != null) {
             if (example != null) {
                 result = repo.findByDateBetweenAndAnimal(LocalDate.parse(dateStartStr), LocalDate.parse(dateEndStr), example, pageable)

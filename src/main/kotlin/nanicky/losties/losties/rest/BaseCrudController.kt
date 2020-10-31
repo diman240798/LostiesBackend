@@ -23,8 +23,8 @@ open class BaseCrudController<M, R: JpaRepository<M, UUID>> {
         repo.deleteById(id)
     }
 
-    @GetMapping("/get")
+    /*@GetMapping("/get")
     fun getAll(): MutableList<M> {
         return repo.findAll()
-    }
+    }*/
 }
