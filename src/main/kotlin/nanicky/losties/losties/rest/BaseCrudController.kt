@@ -13,11 +13,6 @@ open class BaseCrudController<M, R: JpaRepository<M, UUID>> {
     @Autowired
     protected lateinit var repo: R
 
-    @PostMapping("/add")
-    fun add(@RequestBody model: M) {
-        repo.save(model)
-    }
-
     @GetMapping("/delete/{id}")
     fun delete(@PathVariable id : UUID) {
         repo.deleteById(id)

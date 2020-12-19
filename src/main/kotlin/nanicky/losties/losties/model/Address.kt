@@ -5,4 +5,9 @@ import javax.persistence.Entity
 import javax.persistence.Id
 
 @Entity
-data class Address(@Id val id: UUID, var city: String, var street: String, var houseNumber: String)
+data class Address(
+        @Id var id: UUID? = null,
+        var city: String? = null,
+        var street: String? = null,
+        var houseNumber: String? = null
+)
