@@ -1,15 +1,14 @@
 package nanicky.losties.losties.rest
 
 import com.github.kotlintelegrambot.bot
+import nanicky.losties.losties.enums.PublicationTypes
+import nanicky.losties.losties.model.AnimalPublicationTyped
 import nanicky.losties.losties.repo.LostAnimalRepo
 import nanicky.losties.losties.repo.PhotoManager
-import nanicky.losties.losties.repo.PhotoType
+import nanicky.losties.losties.repo.SeenAnimalRepo
+import nanicky.losties.losties.repo.TakenAnimalRepo
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
-import java.io.File
+import org.springframework.web.bind.annotation.*
 import java.util.*
 
 @RestController
@@ -18,6 +17,10 @@ class SocialNetworksBotController {
 
     @Autowired
     private lateinit var lostAnimalRepo: LostAnimalRepo
+    @Autowired
+    private lateinit var seenAnimalRepo: SeenAnimalRepo
+    @Autowired
+    private lateinit var takenAnimalRepo: TakenAnimalRepo
     @Autowired
     private lateinit var photoManager: PhotoManager
 
@@ -34,35 +37,57 @@ class SocialNetworksBotController {
 
     private val LOST_ANIMAL_PATTERN = "Потярялось животное типа: %s по адресу: %s. Кличка: %s"
 
-    @GetMapping("/send-all-lost")
-    fun sendLostToAll(@RequestParam id: UUID) {
+    @PostMapping("/send-all")
+    fun sendPublicaiton(@RequestParam publicationId: UUID, @RequestParam publicationTypes: PublicationTypes) {
 
-        val option = lostAnimalRepo.findById(id)
-        if (!option.isPresent) {
+        var publicationOption: Optional<AnimalPublicationTyped> = getPublication(publicationTypes, publicationId)
+
+        if (!publicationOption.isPresent) {
             throw PublicationNotFoundException()
         }
 
-        val lostAnimal = option.get()
-        val address = lostAnimal.geoAddress!!.address
+        val publicationTyped = publicationOption.get()
+        val address = publicationTyped.geoAddress!!.address
 
-        val animal = lostAnimal.animal!!
-        val photoIds = animal.photoIds
+        val animal = publicationTyped.animal!!
+        val photoIds = animal.photoIds!!
         val type = animal.type!!.rusName
         val name = animal.name
 
-        val photosCount = photoIds!!.size
-
         val caption = String.format(LOST_ANIMAL_PATTERN, type, address, name)
 
-        sendTelegram(photosCount, photoIds, caption)
-
-
+        sendTelegram(photoIds, caption)
     }
 
-    private fun sendTelegram(photosCount: Int, photoIds: List<UUID>, caption: String) {
+    private fun getPublication(publicationTypes: PublicationTypes, publicationId: UUID): Optional<AnimalPublicationTyped> {
+        var publicationOption: Optional<AnimalPublicationTyped> = Optional.empty()
+        if (publicationTypes == PublicationTypes.LOST) {
+            val option = lostAnimalRepo.findById(publicationId)
+            if (!option.isPresent) {
+                throw PublicationNotFoundException()
+            }
+            publicationOption = Optional.of(AnimalPublicationTyped(option.get()))
+        } else if (publicationTypes == PublicationTypes.SEEN) {
+            val option = seenAnimalRepo.findById(publicationId)
+            if (!option.isPresent) {
+                throw PublicationNotFoundException()
+            }
+            publicationOption = Optional.of(AnimalPublicationTyped(option.get()))
+        } else if (publicationTypes == PublicationTypes.TAKEN) {
+            val option = takenAnimalRepo.findById(publicationId)
+            if (!option.isPresent) {
+                throw PublicationNotFoundException()
+            }
+            publicationOption = Optional.of(AnimalPublicationTyped(option.get()))
+        }
+        return publicationOption
+    }
+
+    private fun sendTelegram(photoIds: List<UUID>, caption: String) {
+        val photosCount = photoIds.size
         if (photosCount > 1) {
             for (i in 0 until photosCount) {
-                val photoFile = photoManager.getPhotoFile(photoIds[0], PhotoType.LOST)!!
+                val photoFile = photoManager.getPhotoFile(photoIds[0], PublicationTypes.LOST)!!
                 if (i < photosCount - 1) {
                     bot.sendPhoto(CHAT_ID_LONG, photoFile)
                 } else {
@@ -70,7 +95,7 @@ class SocialNetworksBotController {
                 }
             }
         } else {
-            val photoFile = photoManager.getPhotoFile(photoIds[0], PhotoType.LOST)!!
+            val photoFile = photoManager.getPhotoFile(photoIds[0], PublicationTypes.LOST)!!
             bot.sendPhoto(CHAT_ID_LONG, photoFile, caption)
         }
     }

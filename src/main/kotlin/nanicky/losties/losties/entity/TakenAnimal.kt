@@ -10,9 +10,10 @@ import javax.persistence.OneToOne
 
 @Entity
 data class TakenAnimal(
-        @Id val id: UUID ?= null,
-        @OneToOne var animal: Animal ?= null,
-        @OneToOne val user: UserData ?= null,
-        @OneToOne val geoAddress: GeoAddress ?= null,
-        val date: LocalDate ?= null
+        @Id val id: UUID? = null,
+        @OneToOne var animal: Animal? = null,
+        @OneToOne val userData: UserData? = null,
+        @OneToOne val geoAddress: GeoAddress? = null,
+        val date: LocalDate? = null,
+        var userId: String? = null
 )

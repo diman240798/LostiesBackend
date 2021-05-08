@@ -2,7 +2,9 @@ package nanicky.losties.losties.rest
 
 import nanicky.losties.losties.AddAnimalRequest
 import nanicky.losties.losties.entity.LostAnimal
+import nanicky.losties.losties.enums.PublicationTypes
 import nanicky.losties.losties.model.Animal
+import nanicky.losties.losties.model.AnimalPublication
 import nanicky.losties.losties.repo.*
 import nanicky.losties.losties.util.AnimalType
 import org.springframework.beans.factory.annotation.Autowired
@@ -17,6 +19,7 @@ import java.util.*
 @RestController
 @RequestMapping("/lost")
 class LostAnimalController : BaseCrudController<LostAnimal, LostAnimalRepo>() {
+
 
     @Autowired
     lateinit var photoManager: PhotoManager
@@ -33,7 +36,7 @@ class LostAnimalController : BaseCrudController<LostAnimal, LostAnimalRepo>() {
         val photoIds = mutableListOf<UUID>()
 
         request.photos.forEach {
-            val file = photoManager.savePhoto(it, PhotoType.LOST)
+            val file = photoManager.savePhoto(it, PublicationTypes.LOST)
             photoIds.add(UUID.fromString(file!!.name.toString().substringBefore(".")))
         }
 
@@ -41,7 +44,7 @@ class LostAnimalController : BaseCrudController<LostAnimal, LostAnimalRepo>() {
         animal.photoIds = photoIds
         animalRepo.save(animal)
 
-        val user = request.user!!
+        val user = request.userData!!
         userRepo.save(user)
 
         val geoAddress = request.geoAddress!!
@@ -52,12 +55,21 @@ class LostAnimalController : BaseCrudController<LostAnimal, LostAnimalRepo>() {
                 animal,
                 user,
                 geoAddress,
-                date = LocalDate.now()
+                date = LocalDate.now(),
+                userId = request.userId
         )
 
         repo.save(lostAnimal)
 
     }
+
+    @GetMapping("/getAll")
+    fun getAll() : List<AnimalPublication> =
+            repo.findAll().map { AnimalPublication(it) }
+
+    @GetMapping("/getAllUser")
+    fun getAllUser(@RequestParam("userId") userId: String): List<AnimalPublication> =
+            repo.findAll(Example.of(LostAnimal(userId = userId))).map { AnimalPublication(it) }
 
     val ITEMS_ON_PAGE = 12
 
@@ -68,7 +80,7 @@ class LostAnimalController : BaseCrudController<LostAnimal, LostAnimalRepo>() {
             @RequestParam("breed") breed: String?,
             @RequestParam("type") type: AnimalType?,
             @RequestParam("page") page: Int?
-    ) : List<LostAnimal> {
+    ) : List<AnimalPublication> {
 
         val page = page ?: 0
 
@@ -116,6 +128,6 @@ class LostAnimalController : BaseCrudController<LostAnimal, LostAnimalRepo>() {
             }
         }
 
-        return result
+        return result.map { AnimalPublication(it) }
     }
 }

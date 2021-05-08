@@ -1,22 +1,75 @@
 package nanicky.losties.losties.rest
 
+import nanicky.losties.losties.AddAnimalRequest
 import nanicky.losties.losties.entity.SeenAnimal
+import nanicky.losties.losties.enums.PublicationTypes
 import nanicky.losties.losties.model.Animal
-import nanicky.losties.losties.repo.SeenAnimalRepo
+import nanicky.losties.losties.model.AnimalPublication
+import nanicky.losties.losties.repo.*
 import nanicky.losties.losties.util.AnimalType
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Example
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
+import java.util.*
 
 
 @RestController
 @RequestMapping("/seen")
 class SeenAnimalController : BaseCrudController<SeenAnimal, SeenAnimalRepo>() {
+
+
+    @Autowired
+    lateinit var photoManager: PhotoManager
+    @Autowired
+    lateinit var animalRepo: AnimalRepo
+    @Autowired
+    lateinit var geoAddressRepo: GeoAddressRepo
+    @Autowired
+    lateinit var userRepo: UserDataRepo
+
+    @PostMapping("/add")
+    fun add(@RequestBody request: AddAnimalRequest) {
+
+        val photoIds = mutableListOf<UUID>()
+
+        request.photos.forEach {
+            val file = photoManager.savePhoto(it, PublicationTypes.SEEN)
+            photoIds.add(UUID.fromString(file!!.name.toString().substringBefore(".")))
+        }
+
+        val animal = request.animal!!
+        animal.photoIds = photoIds
+        animalRepo.save(animal)
+
+        val user = request.userData!!
+        userRepo.save(user)
+
+        val geoAddress = request.geoAddress!!
+        geoAddressRepo.save(geoAddress)
+
+        val seenAnimal = SeenAnimal(
+                UUID.randomUUID(),
+                animal,
+                user,
+                geoAddress,
+                date = LocalDate.now(),
+                userId = request.userId
+        )
+
+        repo.save(seenAnimal)
+
+    }
+
+    @GetMapping("/getAll")
+    fun getAll() : List<AnimalPublication> =
+            repo.findAll().map { AnimalPublication(it) }
+
+    @GetMapping("/getAllUser")
+    fun getAllUser(@RequestParam("userId") userId: String): List<AnimalPublication> =
+            repo.findAll(Example.of(SeenAnimal(userId = userId))).map { AnimalPublication(it) }
 
     val ITEMS_ON_PAGE = 12
 
@@ -27,7 +80,7 @@ class SeenAnimalController : BaseCrudController<SeenAnimal, SeenAnimalRepo>() {
             @RequestParam("breed") breed: String?,
             @RequestParam("type") type: AnimalType?,
             @RequestParam("page") page: Int?
-    ): List<SeenAnimal> {
+    ): List<AnimalPublication> {
 
         val page = page ?: 0
 
@@ -75,6 +128,6 @@ class SeenAnimalController : BaseCrudController<SeenAnimal, SeenAnimalRepo>() {
             }
         }
 
-        return result
+        return result.map { AnimalPublication(it) }
     }
 }
